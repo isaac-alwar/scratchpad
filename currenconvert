@@ -1,0 +1,203 @@
+Step 1: Create the Custom Pipe
+First, generate a custom pipe for currency conversion:
+
+sh
+ng generate pipe currency-converter
+Edit src/app/currency-converter.pipe.ts:
+
+typescript
+import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+  name: 'currencyConverter'
+})
+export class CurrencyConverterPipe implements PipeTransform {
+
+  private yenToUsdRate: number = 0.0086; // Example rate, 1 Yen = 0.0086 USD
+  private usdToYenRate: number = 116; // Example rate, 1 USD = 116 Yen
+
+  transform(value: number, fromCurrency: string, toCurrency: string): number {
+    if (!value) {
+      return 0;
+    }
+    if (fromCurrency === 'YEN' && toCurrency === 'USD') {
+      return value * this.yenToUsdRate;
+    } else if (fromCurrency === 'USD' && toCurrency === 'YEN') {
+      return value * this.usdToYenRate;
+    }
+    return value;
+  }
+}
+Step 2: Update the usd component
+Edit src/app/usd/usd.component.ts to remove the conversion logic:
+
+typescript
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-usd',
+  templateUrl: './usd.component.html',
+  styleUrls: ['./usd.component.css']
+})
+export class UsdComponent {
+  @Input() yenValue: number;
+  @Output() yenValueChange = new EventEmitter<number>();
+}
+Edit src/app/usd/usd.component.html to use the custom pipe:
+
+html
+<div>
+  <h2>Convert Yen to USD</h2>
+  <input type="number" [(ngModel)]="yenValue" (ngModelChange)="yenValueChange.emit(yenValue)" placeholder="Enter Yen">
+  <p>{{ yenValue }} Yen = {{ yenValue | currencyConverter:'YEN':'USD' | number:'1.2-2' }} USD</p>
+</div>
+Step 3: Update the yen component
+Edit src/app/yen/yen.component.ts to remove the conversion logic:
+
+typescript
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-yen',
+  templateUrl: './yen.component.html',
+  styleUrls: ['./yen.component.css']
+})
+export class YenComponent {
+  @Input() usdValue: number;
+  @Output() usdValueChange = new EventEmitter<number>();
+}
+Edit src/app/yen/yen.component.html to use the custom pipe:
+
+html
+<div>
+  <h2>Convert USD to Yen</h2>
+  <input type="number" [(ngModel)]="usdValue" (ngModelChange)="usdValueChange.emit(usdValue)" placeholder="Enter USD">
+  <p>{{ usdValue }} USD = {{ usdValue | currencyConverter:'USD':'YEN' | number:'1.2-2' }} Yen</p>
+</div>
+Step 4: Update the app module
+Edit src/app/app.module.ts to declare the custom pipe:
+
+typescript
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+
+import { AppComponent } from './app.component';
+import { UsdComponent } from './usd/usd.component';
+import { YenComponent } from './yen/yen.component';
+import { CurrencyConverterPipe } from './currency-converter.pipe';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    UsdComponent,
+    YenComponent,
+    CurrencyConverterPipe
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+Step 5: Write Unit Tests
+Let's write some tests for the custom pipe and components. First, update src/app/currency-converter.pipe.spec.ts:
+
+typescript
+import { CurrencyConverterPipe } from './currency-converter.pipe';
+
+describe('CurrencyConverterPipe', () => {
+  const pipe = new CurrencyConverterPipe();
+
+  it('should convert Yen to USD', () => {
+    expect(pipe.transform(1000, 'YEN', 'USD')).toBeCloseTo(8.6, 2);
+  });
+
+  it('should convert USD to Yen', () => {
+    expect(pipe.transform(1, 'USD', 'YEN')).toBe(116);
+  });
+
+  it('should return the original value for unsupported currencies', () => {
+    expect(pipe.transform(100, 'GBP', 'EUR')).toBe(100);
+  });
+});
+Update src/app/usd/usd.component.spec.ts:
+
+typescript
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { UsdComponent } from './usd.component';
+import { CurrencyConverterPipe } from '../currency-converter.pipe';
+
+describe('UsdComponent', () => {
+  let component: UsdComponent;
+  let fixture: ComponentFixture<UsdComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [UsdComponent, CurrencyConverterPipe],
+      imports: [FormsModule]
+    }).compileComponents();
+  });
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(UsdComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('should convert Yen to USD', () => {
+    component.yenValue = 1000;
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement;
+    expect(compiled.querySelector('p').textContent).toContain('8.60 USD');
+  });
+});
+Update src/app/yen/yen.component.spec.ts:
+
+typescript
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { YenComponent } from './yen.component';
+import { CurrencyConverterPipe } from '../currency-converter.pipe';
+
+describe('YenComponent', () => {
+  let component: YenComponent;
+  let fixture: ComponentFixture<YenComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [YenComponent, CurrencyConverterPipe],
+      imports: [FormsModule]
+    }).compileComponents();
+  });
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(YenComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('should convert USD to Yen', () => {
+    component.usdValue = 1;
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement;
+    expect(compiled.querySelector('p').textContent).toContain('116.00 Yen');
+  });
+});
+Summary
+We've created a custom Angular pipe for currency conversion, updated the components to use this pipe, and written unit tests to ensure everything works correctly. You can run your Angular application using:
+
+sh
+ng serve
+And run the tests using:
