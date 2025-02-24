@@ -198,4 +198,4 @@ describe('YenComponent', () => {
 
 sh
 ng serve
-And run the tests using:
+ng test
