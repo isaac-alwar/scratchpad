@@ -195,8 +195,6 @@ describe('YenComponent', () => {
     expect(compiled.querySelector('p').textContent).toContain('116.00 Yen');
   });
 });
-Summary
-We've created a custom Angular pipe for currency conversion, updated the components to use this pipe, and written unit tests to ensure everything works correctly. You can run your Angular application using:
 
 sh
 ng serve
